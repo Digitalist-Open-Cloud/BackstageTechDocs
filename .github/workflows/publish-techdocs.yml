@@ -1,0 +1,64 @@
+name: Publish Backstage TechDocs
+
+on:
+  workflow_call:
+    inputs:
+      entity-name:
+        required: true
+        type: string
+      entity-kind:
+        required: false
+        type: string
+        default: Component
+      entity-namespace:
+        required: false
+        type: string
+        default: default
+      s3-endpoint:
+        required: true
+        type: string
+      bucket-name:
+        required: true
+        type: string
+      aws-region:
+        required: false
+        type: string
+        default: us-east-1
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+
+jobs:
+  publish-techdocs:
+    runs-on: ubuntu-latest
+
+    container:
+      image: hub.dglive.net/public/backstage-tech-docs-generator:0.4
+
+    env:
+      ENTITY_NAMESPACE: ${{ inputs.entity-namespace }}
+      ENTITY_KIND: ${{ inputs.entity-kind }}
+      ENTITY_NAME: ${{ inputs.entity-name }}
+      S3_ENDPOINT: ${{ inputs.s3-endpoint }}
+      TECHDOCS_S3_BUCKET_NAME: ${{ inputs.bucket-name }}
+      AWS_REGION: ${{ inputs.aws-region }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate TechDocs site
+        run: techdocs-cli generate --no-docker --verbose
+
+      - name: Publish TechDocs to S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          techdocs-cli publish \
+            --publisher-type awsS3 \
+            --storage-name "$TECHDOCS_S3_BUCKET_NAME" \
+            --entity "$ENTITY_NAMESPACE/$ENTITY_KIND/$ENTITY_NAME" \
+            --awsEndpoint "$S3_ENDPOINT"
