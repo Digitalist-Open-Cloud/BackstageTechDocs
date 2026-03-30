@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: hub.dglive.net/public/backstage-tech-docs-generator:0.4
+      image: hub.dglive.net/public/backstage-tech-docs-generator:0.6
 
     env:
       ENTITY_NAMESPACE: ${{ inputs.entity-namespace }}
